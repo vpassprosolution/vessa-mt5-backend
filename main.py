@@ -2,14 +2,18 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.responses import RedirectResponse
 from database import save_mt5_data, save_risk_data
-import os
 
 app = FastAPI()
 
-@app.get("/")
-def read_root():
-    return {"message": "Hello World"}
 
+@app.get("/")
+def root():
+    return {"message": "Hello from VESSA MT5 Backend ✅"}
+
+
+# -------------------------------
+# ✅ Save MT5 Endpoint
+# -------------------------------
 class MT5Data(BaseModel):
     user_id: int
     broker: str
@@ -26,6 +30,10 @@ async def save_mt5(data: MT5Data):
     )
     return {"success": success}
 
+
+# -------------------------------
+# ✅ Save Risk Endpoint
+# -------------------------------
 class RiskData(BaseModel):
     user_id: int
     method: str
@@ -40,11 +48,10 @@ async def save_risk(data: RiskData):
     )
     return {"success": success}
 
+
+# -------------------------------
+# ✅ Optional Redirect /docs fix
+# -------------------------------
 @app.get("/docs", include_in_schema=False)
 async def custom_docs():
     return RedirectResponse(url="/redoc")
-
-# ✅ This is the missing magic: run app directly if not using Procfile
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
