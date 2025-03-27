@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
+from fastapi.responses import RedirectResponse
 from database import save_mt5_data, save_risk_data  
 
 app = FastAPI()
@@ -35,10 +36,14 @@ class RiskData(BaseModel):
 # ✅ API to receive and save Risk preference info
 @app.post("/save_risk")
 async def save_risk(data: RiskData):
-    success = save_risk_data(  # Ensure this function is defined in your database.py
+    success = save_risk_data(
         user_id=data.user_id,
         method=data.method,
         value=data.value
     )
     return {"success": success}
 
+# ✅ Redirect /docs to /redoc (optional fix for Railway 404)
+@app.get("/docs", include_in_schema=False)
+async def custom_docs():
+    return RedirectResponse(url="/redoc")
