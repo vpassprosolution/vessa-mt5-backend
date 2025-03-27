@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.responses import RedirectResponse
-from database import save_mt5_data, save_risk_data  
+from database import save_mt5_data, save_risk_data
 
 app = FastAPI()
 
@@ -9,14 +9,12 @@ app = FastAPI()
 def read_root():
     return {"message": "Hello World"}
 
-# 📦 Define expected request format
 class MT5Data(BaseModel):
     user_id: int
     broker: str
     login: str
     password: str
 
-# ✅ API to receive and save MT5 account info
 @app.post("/save_mt5")
 async def save_mt5(data: MT5Data):
     success = save_mt5_data(
@@ -27,13 +25,11 @@ async def save_mt5(data: MT5Data):
     )
     return {"success": success}
 
-# 📦 Define expected request format for Risk data
 class RiskData(BaseModel):
     user_id: int
     method: str
     value: str
 
-# ✅ API to receive and save Risk preference info
 @app.post("/save_risk")
 async def save_risk(data: RiskData):
     success = save_risk_data(
@@ -43,7 +39,10 @@ async def save_risk(data: RiskData):
     )
     return {"success": success}
 
-# ✅ Redirect /docs to /redoc (optional fix for Railway 404)
 @app.get("/docs", include_in_schema=False)
 async def custom_docs():
     return RedirectResponse(url="/redoc")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8080)
