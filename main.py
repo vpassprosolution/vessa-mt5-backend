@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
-from database import save_mt5_data, save_risk_data  # Make sure save_risk_data is defined in your database.py
+from database import save_mt5_data, save_risk_data  
 
 app = FastAPI()
 

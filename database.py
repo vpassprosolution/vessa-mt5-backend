@@ -1,5 +1,6 @@
 import psycopg2
 from datetime import datetime
+import traceback  # ✅ Add for detailed error tracking
 
 DATABASE_URL = "postgresql://postgres:vVMyqWjrqgVhEnwyFifTQxkDtPjQutGb@interchange.proxy.rlwy.net:30451/railway"
 
@@ -24,6 +25,7 @@ def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         return True
     except Exception as e:
         print("❌ Failed to save MT5 data:", e)
+        traceback.print_exc()  # ✅ Show full error trace
         return False
 
 
@@ -32,7 +34,6 @@ def save_risk_data(user_id: int, method: str, value: str):
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
 
-        # Insert or update the risk preference data for the user
         cur.execute("""
             INSERT INTO risk_preferences (user_id, method, value, created_at)
             VALUES (%s, %s, %s, %s)
@@ -48,4 +49,5 @@ def save_risk_data(user_id: int, method: str, value: str):
         return True
     except Exception as e:
         print("❌ Failed to save risk data:", e)
+        traceback.print_exc()  # ✅ Show full error trace
         return False
