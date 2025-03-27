@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-sqlalchemy
-asyncpg
+httpx
 psycopg2-binary
 python-dotenv
+metaapi-cloud-sdk
