@@ -15,21 +15,22 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
 
-        # 🔍 Check if user already has MetaAPI account ID
+        # 🔍 Step 1: Check if user already has a MetaAPI account
         cur.execute("SELECT metaapi_account_id FROM users WHERE user_id = %s", (user_id,))
         result = cur.fetchone()
         old_account_id = result[0] if result else None
 
-        # 🔧 Step 1: If exists, delete old MetaAPI account
+        metaapi = MetaApi(METAAPI_TOKEN)
+
+        # 🗑️ Step 2: If exists, delete the old account
         if old_account_id:
             try:
-                metaapi = MetaApi(METAAPI_TOKEN)
                 await metaapi.metatrader_account_api.delete_account(old_account_id)
                 print(f"🗑️ Old MetaAPI account deleted: {old_account_id}")
             except Exception as del_error:
                 print("⚠️ Warning: Failed to delete old MetaAPI account:", del_error)
 
-        # 🔧 Step 2: Create NEW MetaAPI account
+        # ⚙️ Step 3: Create new MetaAPI account
         account = await metaapi.metatrader_account_api.create_account({
             'name': f'VESSA-{login}',
             'type': 'cloud',
@@ -43,7 +44,16 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         metaapi_id = account.id
         print(f"✅ MetaAPI Account Created: {metaapi_id}")
 
-        # 🔧 Step 3: Update DB
+        # 🕒 Step 4: Wait and check connection status
+        await account.reload()
+        status = account.connection_status
+        print(f"📡 Account Status: {status}")
+
+        if status not in ["connected", "DEPLOYED"]:  # Acceptable values
+            print("❌ MetaAPI connection failed. Please check broker/login/password.")
+            return False
+
+        # 💾 Step 5: Update database with MT5 info
         cur.execute("""
             UPDATE users
             SET mt5_broker = %s,
@@ -62,6 +72,7 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         print("❌ Failed to save MT5 data:", e)
         traceback.print_exc()
         return False
+
 
 
 
