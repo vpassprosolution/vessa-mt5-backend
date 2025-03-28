@@ -15,7 +15,7 @@ import os
 
 app = FastAPI()
 
-# 🛡️ CORS settings for Mini App
+# ✅ CORS setup for Mini App
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,24 +24,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 🔗 Environment DB
+# ✅ Railway PostgreSQL
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://postgres:vVMyqWjrqgVhEnwyFifTQxkDtPjQutGb@interchange.proxy.rlwy.net:30451/railway"
 )
 
-# 🔑 MetaAPI Token
-METAAPI_TOKEN = os.getenv("METAAPI_TOKEN", "your_real_metaapi_token_here")  # ✅ Replace
+# ✅ MetaAPI credentials
+METAAPI_TOKEN = "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiJlZTFiMzY5MWExMTQzMTYzMjg1ZjYwNDBkYWVkMjFjZCIsImFjY2Vzc1J1bGVzIjpbeyJpZCI6InRyYWRpbmctYWNjb3VudC1tYW5hZ2VtZW50LWFwaSIsIm1ldGhvZHMiOlsidHJhZGluZy1hY2NvdW50LW1hbmFnZW1lbnQtYXBpOnJlc3Q6cHVibGljOio6KiJdLCJyb2xlcyI6WyJyZWFkZXIiLCJ3cml0ZXIiXSwicmVzb3VyY2VzIjpbIio6JFVTRVJfSUQkOioiXX0seyJpZCI6Im1ldGFhcGktcmVzdC1hcGkiLCJtZXRob2RzIjpbIm1ldGFhcGktYXBpOnJlc3Q6cHVibGljOio6KiJdLCJyb2xlcyI6WyJyZWFkZXIiLCJ3cml0ZXIiXSwicmVzb3VyY2VzIjpbIio6JFVTRVJfSUQkOioiXX0seyJpZCI6Im1ldGFhcGktcnBjLWFwaSIsIm1ldGhvZHMiOlsibWV0YWFwaS1hcGk6d3M6cHVibGljOio6KiJdLCJyb2xlcyI6WyJyZWFkZXIiLCJ3cml0ZXIiXSwicmVzb3VyY2VzIjpbIio6JFVTRVJfSUQkOioiXX0seyJpZCI6Im1ldGFhcGktcmVhbC10aW1lLXN0cmVhbWluZy1hcGkiLCJtZXRob2RzIjpbIm1ldGFhcGktYXBpOndzOnB1YmxpYzoqOioiXSwicm9sZXMiOlsicmVhZGVyIiwid3JpdGVyIl0sInJlc291cmNlcyI6WyIqOiRVU0VSX0lEJDoqIl19LHsiaWQiOiJtZXRhc3RhdHMtYXBpIiwibWV0aG9kcyI6WyJtZXRhc3RhdHMtYXBpOnJlc3Q6cHVibGljOio6KiJdLCJyb2xlcyI6WyJyZWFkZXIiLCJ3cml0ZXIiXSwicmVzb3VyY2VzIjpbIio6JFVTRVJfSUQkOioiXX0seyJpZCI6InJpc2stbWFuYWdlbWVudC1hcGkiLCJtZXRob2RzIjpbInJpc2stbWFuYWdlbWVudC1hcGk6cmVzdDpwdWJsaWM6KjoqIl0sInJvbGVzIjpbInJlYWRlciIsIndyaXRlciJdLCJyZXNvdXJjZXMiOlsiKjokVVNFUl9JRCQ6KiJdfSx7ImlkIjoiY29weWZhY3RvcnktYXBpIiwibWV0aG9kcyI6WyJjb3B5ZmFjdG9yeS1hcGk6cmVzdDpwdWJsaWM6KjoqIl0sInJvbGVzIjpbInJlYWRlciIsIndyaXRlciJdLCJyZXNvdXJjZXMiOlsiKjokVVNFUl9JRCQ6KiJdfSx7ImlkIjoibXQtbWFuYWdlci1hcGkiLCJtZXRob2RzIjpbIm10LW1hbmFnZXItYXBpOnJlc3Q6ZGVhbGluZzoqOioiLCJtdC1tYW5hZ2VyLWFwaTpyZXN0OnB1YmxpYzoqOioiXSwicm9sZXMiOlsicmVhZGVyIiwid3JpdGVyIl0sInJlc291cmNlcyI6WyIqOiRVU0VSX0lEJDoqIl19LHsiaWQiOiJiaWxsaW5nLWFwaSIsIm1ldGhvZHMiOlsiYmlsbGluZy1hcGk6cmVzdDpwdWJsaWM6KjoqIl0sInJvbGVzIjpbInJlYWRlciJdLCJyZXNvdXJjZXMiOlsiKjokVVNFUl9JRCQ6KiJdfV0sImlnbm9yZVJhdGVMaW1pdHMiOmZhbHNlLCJ0b2tlbklkIjoiMjAyMTAyMTMiLCJpbXBlcnNvbmF0ZWQiOmZhbHNlLCJyZWFsVXNlcklkIjoiZWUxYjM2OTFhMTE0MzE2MzI4NWY2MDQwZGFlZDIxY2QiLCJpYXQiOjE3NDMxODM0Mzh9.AlE8ZC0wk2DTeAQWuo0bm1_DJcoE1hYyev7CYkGPCzGV_A-7zmg4VThdIb7dQ0gGew5o1dv8wEScTu7VO3ldETo4hXV3q3nloFNa_Dr5Vz4-gfmtNpxp_QwJ1yxbHaI6G3kE7yGGWjlF_pV9uepvCtDISMO0T10meZxK9pjLiFSKHgd-amaoVGdL5mUCEPdtj4CTle7UxETFYmLIR4dOMm0ozJ9IS8_Vfk0e90q-JBbsHIj-87QFh1-FfiXODKeBadOyiFf1O7PvCBnEjqVXrG2Em49Uh_GN1CHoBzusbTe6lfNbdQjuCDsgIWUEP2ZrPT9aZCfcRaS-N-7Beix8sUdkSzv3oRtgarNOLr2gtWjK5Q5tMUv9u9rLi8F6d7smNXALyZ1cmnNVJArSePXl6PCR8DxycgQapnwxIwHgwL-CD-DrFOpNaGHCzrgcxS5iuLLum2WOAzx6exRgx2stgcPt9O4uIRMuzWq00bbWueuVtLc5ksxcv3_0NlWfLc6tWXyznvvFFluSvj9CvXh1DKnSFODS0gp9sBcRMQ13lJ3K0RA8TBBjQEluoI9sbQi7bHHBHMPZKmDcQibFmwkqXRY8vGhbqZRDXfQXI6TiY_BNpQanPaomGKLZ7BjrLY4imdmQX4fDTMlosZNjEPwMw6rLc1CYdWMyWRnzJQ1LpNU"  # 🔒 Use your full token
 
-# -------------------------------
-# ✅ Root
 # -------------------------------
 @app.get("/")
 def root():
     return {"message": "Hello from VESSA MT5 Backend ✅"}
 
-# -------------------------------
-# ✅ Check MT5 Status
 # -------------------------------
 @app.get("/check_mt5_status")
 async def check_mt5_status(user_id: int):
@@ -79,8 +75,6 @@ async def check_mt5_status(user_id: int):
             pass
 
 # -------------------------------
-# ✅ Save MT5 Form
-# -------------------------------
 @app.post("/save_mt5")
 async def save_mt5(
     user_id: str = Form(...),
@@ -96,8 +90,6 @@ async def save_mt5(
         return {"success": False, "error": str(e)}
 
 # -------------------------------
-# ✅ Save Risk Form
-# -------------------------------
 @app.post("/save_risk")
 async def save_risk(
     user_id: str = Form(...),
@@ -112,8 +104,6 @@ async def save_risk(
         return {"success": False, "error": str(e)}
 
 # -------------------------------
-# ✅ Delete MT5
-# -------------------------------
 @app.post("/delete_mt5")
 async def delete_mt5(user_id: int = Form(...)):
     try:
@@ -122,8 +112,6 @@ async def delete_mt5(user_id: int = Form(...)):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-# -------------------------------
-# ✅ Get Premium Copy Users
 # -------------------------------
 @app.get("/get_users_by_symbol")
 def get_users_by_symbol(symbol: str):
@@ -146,8 +134,6 @@ def get_users_by_symbol(symbol: str):
         return {"error": str(e)}
 
 # -------------------------------
-# ✅ Set Copy Subscription
-# -------------------------------
 class CopySubData(BaseModel):
     user_id: int
     status: bool
@@ -160,8 +146,6 @@ async def set_copy_subscription(data: CopySubData):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-# -------------------------------
-# ✅ Redirect /docs → /redoc
 # -------------------------------
 @app.get("/docs", include_in_schema=False)
 async def custom_docs():

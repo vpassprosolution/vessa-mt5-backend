@@ -15,14 +15,14 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
 
-        # 🔍 Step 1: Check if user already has a MetaAPI account
+        # 🔍 Step 1: Check existing MetaAPI account
         cur.execute("SELECT metaapi_account_id FROM users WHERE user_id = %s", (user_id,))
         result = cur.fetchone()
         old_account_id = result[0] if result else None
 
         metaapi = MetaApi(METAAPI_TOKEN)
 
-        # 🗑️ Step 2: If exists, delete the old account
+        # 🗑️ Step 2: Delete old account if exists
         if old_account_id:
             try:
                 await metaapi.metatrader_account_api.remove_account(old_account_id)
@@ -30,7 +30,7 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
             except Exception as del_error:
                 print("⚠️ Warning: Failed to delete old MetaAPI account:", del_error)
 
-        # ⚙️ Step 3: Create new MetaAPI account
+        # ⚙️ Step 3: Create new account
         account = await metaapi.metatrader_account_api.create_account({
             'name': f'VESSA-{login}',
             'type': 'cloud',
@@ -44,26 +44,38 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         metaapi_id = account.id
         print(f"✅ MetaAPI Account Created: {metaapi_id}")
 
-        # 🕒 Step 4: Wait and check connection status
-        await account.reload()
-        status = account.connection_status
-        print(f"📡 Account Status: {status}")
+        # 💾 Step 4: Save details to DB immediately (set is_mt5_valid to FALSE first)
+        cur.execute("SELECT user_id FROM users WHERE user_id = %s", (user_id,))
+        if not cur.fetchone():
+            cur.execute("INSERT INTO users (user_id) VALUES (%s)", (user_id,))
 
-        if status not in ["connected", "DEPLOYED"]:  # Acceptable values
-            print("❌ MetaAPI connection failed. Please check broker/login/password.")
-            return False
-
-        # 💾 Step 5: Update database with MT5 info
         cur.execute("""
-            UPDATE users
-            SET mt5_broker = %s,
+            UPDATE users SET
+                mt5_broker = %s,
                 mt5_login = %s,
                 mt5_password = %s,
-                metaapi_account_id = %s
+                metaapi_account_id = %s,
+                is_mt5_valid = FALSE
             WHERE user_id = %s;
         """, (broker, login, password, metaapi_id, user_id))
-
         conn.commit()
+
+        # ⏳ Step 5: Try to wait for connection up to 30s
+        print("⏳ Waiting for MetaAPI to connect...")
+        status = None
+        for attempt in range(30):
+            await account.reload()
+            status = account.connection_status
+            print(f"🔁 Attempt {attempt + 1}: {status}")
+            if status in ["connected", "DEPLOYED"]:
+                cur.execute("UPDATE users SET is_mt5_valid = TRUE WHERE user_id = %s", (user_id,))
+                conn.commit()
+                break
+            await asyncio.sleep(1)
+
+        if status not in ["connected", "DEPLOYED"]:
+            print("⚠️ Still disconnected after 30s. Leaving is_mt5_valid = FALSE")
+
         cur.close()
         conn.close()
         return True
