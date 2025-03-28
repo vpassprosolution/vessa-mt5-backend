@@ -1,7 +1,7 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi import FastAPI, Form
 from fastapi.responses import RedirectResponse
-from database import save_mt5_data, save_risk_data
+from pydantic import BaseModel
+from database import save_mt5_data, save_risk_data, set_copy_subscription_status
 import psycopg2
 import os
 
@@ -14,57 +14,54 @@ app = FastAPI()
 def root():
     return {"message": "Hello from VESSA MT5 Backend ✅"}
 
-
 # -------------------------------
-# ✅ Save MT5 Endpoint
+# ✅ Save MT5 Form Submission
 # -------------------------------
-class MT5Data(BaseModel):
-    user_id: int
-    broker: str
-    login: str
-    password: str
-
 @app.post("/save_mt5")
-async def save_mt5(data: MT5Data):
+async def save_mt5(
+    user_id: int = Form(...),
+    broker: str = Form(...),
+    login: str = Form(...),
+    password: str = Form(...)
+):
     success = await save_mt5_data(
-        user_id=data.user_id,
-        broker=data.broker,
-        login=data.login,
-        password=data.password
+        user_id=user_id,
+        broker=broker,
+        login=login,
+        password=password
     )
     return {"success": success}
 
-
 # -------------------------------
-# ✅ Save Risk Endpoint
+# ✅ Save Risk Form Submission
 # -------------------------------
-class RiskData(BaseModel):
-    user_id: int
-    method: str
-    value: str
-
 @app.post("/save_risk")
-async def save_risk(data: RiskData):
+async def save_risk(
+    user_id: int = Form(...),
+    method: str = Form(...),
+    value: str = Form(...)
+):
     success = save_risk_data(
-        user_id=data.user_id,
-        method=data.method,
-        value=data.value
+        user_id=user_id,
+        method=method,
+        value=value
     )
     return {"success": success}
 
-
 # -------------------------------
-# ✅ Optional Redirect /docs fix
+# ✅ Optional Redirect for /docs
 # -------------------------------
 @app.get("/docs", include_in_schema=False)
 async def custom_docs():
     return RedirectResponse(url="/redoc")
 
-
 # -------------------------------
 # ✅ Get Premium Copy Users by Symbol
 # -------------------------------
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:vVMyqWjrqgVhEnwyFifTQxkDtPjQutGb@interchange.proxy.rlwy.net:30451/railway")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://postgres:vVMyqWjrqgVhEnwyFifTQxkDtPjQutGb@interchange.proxy.rlwy.net:30451/railway"
+)
 conn = psycopg2.connect(DATABASE_URL)
 cursor = conn.cursor()
 
@@ -85,13 +82,11 @@ def get_users_by_symbol(symbol: str):
         return {"error": str(e)}
 
 # -------------------------------
-# ✅ Set Copy Subscription (Subscribe/Unsubscribe)
+# ✅ Set Copy Subscription (API called by bot)
 # -------------------------------
 class CopySubData(BaseModel):
     user_id: int
     status: bool
-
-from database import set_copy_subscription_status  # make sure this exists
 
 @app.post("/set_copy_subscription")
 async def set_copy_subscription(data: CopySubData):
