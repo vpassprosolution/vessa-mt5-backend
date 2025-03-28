@@ -45,7 +45,7 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         metaapi_id = account.id
         print(f"✅ MetaAPI Account Created: {metaapi_id}")
 
-        # 💾 Step 4: Save details to DB immediately (set is_mt5_valid to FALSE first)
+        # 💾 Step 4: Save details to DB immediately (set is_mt5_valid = FALSE first)
         cur.execute("SELECT user_id FROM users WHERE user_id = %s", (user_id,))
         if not cur.fetchone():
             cur.execute("INSERT INTO users (user_id) VALUES (%s)", (user_id,))
@@ -63,18 +63,23 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
 
         # ⏳ Step 5: Try to wait for connection up to 30s
         print("⏳ Waiting for MetaAPI to connect...")
-        status = None
+        connected = False
+
         for attempt in range(30):
             await account.reload()
             status = account.connection_status
             print(f"🔁 Attempt {attempt + 1}: {status}")
+
             if status in ["connected", "DEPLOYED"]:
                 cur.execute("UPDATE users SET is_mt5_valid = TRUE WHERE user_id = %s", (user_id,))
                 conn.commit()
+                print("✅ MetaAPI Connected. Marked as valid.")
+                connected = True
                 break
+
             await asyncio.sleep(1)
 
-        if status not in ["connected", "DEPLOYED"]:
+        if not connected:
             print("⚠️ Still disconnected after 30s. Leaving is_mt5_valid = FALSE")
 
         cur.close()
@@ -89,13 +94,19 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
 
 
 
-
 # ✅ Save risk preference to `users` table
 def save_risk_data(user_id: int, method: str, value: str):
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
 
+        # ✅ Step 1: Ensure user exists
+        cur.execute("SELECT user_id FROM users WHERE user_id = %s", (user_id,))
+        if not cur.fetchone():
+            cur.execute("INSERT INTO users (user_id) VALUES (%s)", (user_id,))
+            print("🆕 User inserted before saving risk:", user_id)
+
+        # ✅ Step 2: Update risk values
         cur.execute("""
             UPDATE users
             SET risk_type = %s,
@@ -112,6 +123,7 @@ def save_risk_data(user_id: int, method: str, value: str):
         print("❌ Failed to save risk data:", e)
         traceback.print_exc()
         return False
+
 
 # ✅ Set Copy Subscription status
 def set_copy_subscription_status(user_id: int, status: bool):
