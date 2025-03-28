@@ -28,19 +28,18 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
             'magic': 123456
         })
 
-        metaapi_id = account.id  # ✅ FIXED: use object-style access instead of account['id']
+        metaapi_id = account.id  # ✅ object style
         print(f"✅ MetaAPI Account Created: {metaapi_id}")
 
-        # 🔧 Step 2: UPSERT into `users` table
+        # 🔧 Step 2: Only UPDATE (not insert) — to avoid NOT NULL column errors
         cur.execute("""
-            INSERT INTO users (user_id, mt5_broker, mt5_login, mt5_password, metaapi_account_id)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (user_id) DO UPDATE SET
-                mt5_broker = EXCLUDED.mt5_broker,
-                mt5_login = EXCLUDED.mt5_login,
-                mt5_password = EXCLUDED.mt5_password,
-                metaapi_account_id = EXCLUDED.metaapi_account_id;
-        """, (user_id, broker, login, password, metaapi_id))
+            UPDATE users
+            SET mt5_broker = %s,
+                mt5_login = %s,
+                mt5_password = %s,
+                metaapi_account_id = %s
+            WHERE user_id = %s;
+        """, (broker, login, password, metaapi_id, user_id))
 
         conn.commit()
         cur.close()
@@ -51,6 +50,7 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         print("❌ Failed to save MT5 data:", e)
         traceback.print_exc()
         return False
+
 
 
 # ✅ Save risk preference to `users` table
