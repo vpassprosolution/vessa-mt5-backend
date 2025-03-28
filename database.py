@@ -3,7 +3,7 @@ from datetime import datetime
 import traceback
 from metaapi_cloud_sdk import MetaApi
 import asyncio
-from database import delete_mt5_account as delete_mt5_data
+
 
 # ✅ PostgreSQL connection
 DATABASE_URL = "postgresql://postgres:vVMyqWjrqgVhEnwyFifTQxkDtPjQutGb@interchange.proxy.rlwy.net:30451/railway"
