@@ -55,9 +55,24 @@ async def check_mt5_status(user_id: int):
             return {"status": "no_account", "is_valid": False}
 
         metaapi = MetaApi(METAAPI_TOKEN)
-        account = await metaapi.metatrader_account_api.get_account(metaapi_id)
-        await account.reload()
-        status = account.connection_status
+        try:
+            account = await metaapi.metatrader_account_api.get_account(metaapi_id)
+            await account.reload()
+            status = account.connection_status
+        except Exception as e:
+            # If MetaAPI account is deleted
+            print(f"⚠️ Account ID {metaapi_id} not found. Cleaning DB...")
+            cur.execute("""
+                UPDATE users
+                SET metaapi_account_id = NULL,
+                    mt5_login = NULL,
+                    mt5_password = NULL,
+                    mt5_broker = NULL,
+                    is_mt5_valid = FALSE
+                WHERE user_id = %s
+            """, (user_id,))
+            conn.commit()
+            return {"status": "deleted", "is_valid": False}
 
         print(f"📡 User {user_id} | MetaAPI Status: {status} | is_valid: {is_valid}")
         return {"status": status, "is_valid": is_valid}
@@ -73,6 +88,7 @@ async def check_mt5_status(user_id: int):
             conn.close()
         except:
             pass
+
 
 # -------------------------------
 @app.post("/save_mt5")
