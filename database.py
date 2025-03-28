@@ -25,7 +25,7 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         # 🗑️ Step 2: If exists, delete the old account
         if old_account_id:
             try:
-                await metaapi.metatrader_account_api.delete_account(old_account_id)
+                await metaapi.metatrader_account_api.remove_account(old_account_id)
                 print(f"🗑️ Old MetaAPI account deleted: {old_account_id}")
             except Exception as del_error:
                 print("⚠️ Warning: Failed to delete old MetaAPI account:", del_error)
@@ -133,7 +133,7 @@ async def delete_mt5_account(user_id: int):
         if metaapi_id:
             try:
                 metaapi = MetaApi(METAAPI_TOKEN)
-                await metaapi.metatrader_account_api.delete_account(metaapi_id)
+                await metaapi.metatrader_account_api.remove_account(metaapi_id)
                 print(f"🗑️ MetaAPI account deleted: {metaapi_id}")
             except Exception as del_error:
                 print("⚠️ Failed to delete from MetaAPI:", del_error)
