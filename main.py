@@ -19,34 +19,41 @@ def root():
 # -------------------------------
 @app.post("/save_mt5")
 async def save_mt5(
-    user_id: int = Form(...),
+    user_id: str = Form(...),
     broker: str = Form(...),
     login: str = Form(...),
     password: str = Form(...)
 ):
-    success = await save_mt5_data(
-        user_id=user_id,
-        broker=broker,
-        login=login,
-        password=password
-    )
-    return {"success": success}
+    try:
+        user_id = int(user_id)  # ✅ Convert safely
+        success = await save_mt5_data(
+            user_id=user_id,
+            broker=broker,
+            login=login,
+            password=password
+        )
+        return {"success": success}
+    except Exception as e:
+        return {"error": str(e)}
 
-# -------------------------------
-# ✅ Save Risk Form Submission
-# -------------------------------
+
 @app.post("/save_risk")
 async def save_risk(
-    user_id: int = Form(...),
+    user_id: str = Form(...),
     method: str = Form(...),
     value: str = Form(...)
 ):
-    success = save_risk_data(
-        user_id=user_id,
-        method=method,
-        value=value
-    )
-    return {"success": success}
+    try:
+        user_id = int(user_id)  # ✅ Convert safely
+        success = save_risk_data(
+            user_id=user_id,
+            method=method,
+            value=value
+        )
+        return {"success": success}
+    except Exception as e:
+        return {"error": str(e)}
+
 
 # -------------------------------
 # ✅ Optional Redirect for /docs
