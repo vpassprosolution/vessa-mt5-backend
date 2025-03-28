@@ -27,7 +27,8 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
             'application': 'copyfactory',
             'magic': 123456
         })
-        metaapi_id = account['id']
+
+        metaapi_id = account.id  # ✅ FIXED: use object-style access instead of account['id']
         print(f"✅ MetaAPI Account Created: {metaapi_id}")
 
         # 🔧 Step 2: UPSERT into `users` table
@@ -50,6 +51,7 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         print("❌ Failed to save MT5 data:", e)
         traceback.print_exc()
         return False
+
 
 # ✅ Save risk preference to `users` table
 def save_risk_data(user_id: int, method: str, value: str):
