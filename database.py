@@ -3,6 +3,7 @@ from datetime import datetime
 import traceback
 from metaapi_cloud_sdk import MetaApi
 import asyncio
+from database import delete_mt5_account as delete_mt5_data
 
 # ✅ PostgreSQL connection
 DATABASE_URL = "postgresql://postgres:vVMyqWjrqgVhEnwyFifTQxkDtPjQutGb@interchange.proxy.rlwy.net:30451/railway"
@@ -142,7 +143,7 @@ def set_copy_subscription_status(user_id: int, status: bool):
         return False
 
 # ✅ Delete MT5 account from MetaAPI + DB cleanup
-async def delete_mt5_account(user_id: int):
+async def delete_mt5_data(user_id: int):
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()

@@ -6,8 +6,9 @@ from database import (
     save_mt5_data,
     save_risk_data,
     set_copy_subscription_status,
-    delete_mt5_account
+    delete_mt5_data  # ✅ correct function name
 )
+
 from metaapi_cloud_sdk import MetaApi
 import psycopg2
 import traceback
@@ -120,13 +121,9 @@ async def save_risk(
         return {"success": False, "error": str(e)}
 
 # -------------------------------
-@app.post("/delete_mt5")
-async def delete_mt5(user_id: int = Form(...)):
-    try:
-        success = await delete_mt5_account(user_id)
-        return {"success": success}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
+@app.delete("/delete_mt5")
+async def delete_mt5(user_id: int):
+    return await delete_mt5_data(user_id)
 
 # -------------------------------
 @app.get("/get_users_by_symbol")
