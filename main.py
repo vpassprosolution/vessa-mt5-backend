@@ -31,6 +31,22 @@ async def save_mt5(
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+
+# ✅ Check if user has MT5 connected
+@app.get("/check_mt5_status")
+def check_mt5_status(user_id: int):
+    try:
+        cursor.execute("""
+            SELECT metaapi_account_id FROM users
+            WHERE user_id = %s AND metaapi_account_id IS NOT NULL
+        """, (user_id,))
+        result = cursor.fetchone()
+        return {"connected": bool(result)}
+    except Exception as e:
+        return {"connected": False, "error": str(e)}
+
+
+
 # -------------------------------
 # ✅ Save Risk Form Submission
 # -------------------------------
