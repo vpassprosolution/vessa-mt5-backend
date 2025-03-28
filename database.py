@@ -45,7 +45,7 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         metaapi_id = account.id
         print(f"✅ MetaAPI Account Created: {metaapi_id}")
 
-        # 💾 Step 4: Save details to DB immediately (set is_mt5_valid = FALSE first)
+        # 💾 Step 4: Save details to DB (set is_mt5_valid = FALSE first)
         cur.execute("SELECT user_id FROM users WHERE user_id = %s", (user_id,))
         if not cur.fetchone():
             cur.execute("INSERT INTO users (user_id) VALUES (%s)", (user_id,))
@@ -57,14 +57,12 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
                 mt5_login = %s,
                 mt5_password = %s,
                 metaapi_account_id = %s,
-                is_mt5_valid = FALSE,
-                risk_type = COALESCE(risk_type, 'fixed'),
-                risk_value = COALESCE(risk_value, '0.01')
+                is_mt5_valid = FALSE
             WHERE user_id = %s;
         """, (broker, login, password, metaapi_id, user_id))
         conn.commit()
 
-        # ⏳ Step 5: Try to wait for connection up to 30s
+        # ⏳ Step 5: Wait for connection (up to 30s)
         print("⏳ Waiting for MetaAPI to connect...")
         connected = False
         for attempt in range(30):
@@ -90,8 +88,6 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         print("❌ Failed to save MT5 data:", e)
         traceback.print_exc()
         return False
-
-
 
 
 # ✅ Save risk preference to `users` table
