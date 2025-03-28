@@ -16,14 +16,14 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
 
-        # 🔍 Step 1: Check existing MetaAPI account
+        # 🔍 Check existing MetaAPI account
         cur.execute("SELECT metaapi_account_id FROM users WHERE user_id = %s", (user_id,))
         result = cur.fetchone()
         old_account_id = result[0] if result else None
 
         metaapi = MetaApi(METAAPI_TOKEN)
 
-        # 🗑️ Step 2: Delete old account if exists
+        # 🗑️ Delete old MetaAPI account if exists
         if old_account_id:
             try:
                 await metaapi.metatrader_account_api.remove_account(old_account_id)
@@ -31,7 +31,7 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
             except Exception as del_error:
                 print("⚠️ Warning: Failed to delete old MetaAPI account:", del_error)
 
-        # ⚙️ Step 3: Create new account
+        # ✅ Create new MetaAPI account
         account = await metaapi.metatrader_account_api.create_account({
             'name': f'VESSA-{login}',
             'type': 'cloud',
@@ -45,7 +45,7 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         metaapi_id = account.id
         print(f"✅ MetaAPI Account Created: {metaapi_id}")
 
-        # 💾 Step 4: Save details to DB immediately (set is_mt5_valid = FALSE first)
+        # 💾 Save to DB immediately with is_mt5_valid = FALSE
         cur.execute("SELECT user_id FROM users WHERE user_id = %s", (user_id,))
         if not cur.fetchone():
             cur.execute("INSERT INTO users (user_id) VALUES (%s)", (user_id,))
@@ -61,22 +61,19 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         """, (broker, login, password, metaapi_id, user_id))
         conn.commit()
 
-        # ⏳ Step 5: Try to wait for connection up to 30s
+        # ⏳ Wait for MetaAPI to connect (up to 30s)
         print("⏳ Waiting for MetaAPI to connect...")
         connected = False
-
         for attempt in range(30):
             await account.reload()
             status = account.connection_status
             print(f"🔁 Attempt {attempt + 1}: {status}")
-
-            if status in ["connected", "DEPLOYED"]:
+            if status.lower() == "connected":
                 cur.execute("UPDATE users SET is_mt5_valid = TRUE WHERE user_id = %s", (user_id,))
                 conn.commit()
                 print("✅ MetaAPI Connected. Marked as valid.")
                 connected = True
                 break
-
             await asyncio.sleep(1)
 
         if not connected:
@@ -93,28 +90,27 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
 
 
 
-
 # ✅ Save risk preference to `users` table
 def save_risk_data(user_id: int, method: str, value: str):
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
 
-        # ✅ Step 1: Ensure user exists
+        # ✅ Ensure user row exists
         cur.execute("SELECT user_id FROM users WHERE user_id = %s", (user_id,))
         if not cur.fetchone():
             cur.execute("INSERT INTO users (user_id) VALUES (%s)", (user_id,))
-            print("🆕 User inserted before saving risk:", user_id)
+            conn.commit()
 
-        # ✅ Step 2: Update risk values
+        # ✅ Save risk method + value
         cur.execute("""
-            UPDATE users
-            SET risk_type = %s,
+            UPDATE users SET
+                risk_type = %s,
                 risk_value = %s
             WHERE user_id = %s;
         """, (method, value, user_id))
-
         conn.commit()
+
         cur.close()
         conn.close()
         return True
@@ -123,6 +119,7 @@ def save_risk_data(user_id: int, method: str, value: str):
         print("❌ Failed to save risk data:", e)
         traceback.print_exc()
         return False
+
 
 
 # ✅ Set Copy Subscription status
