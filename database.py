@@ -16,14 +16,14 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
 
-        # 🔍 Check existing MetaAPI account
+        # 🔍 Step 1: Check existing MetaAPI account
         cur.execute("SELECT metaapi_account_id FROM users WHERE user_id = %s", (user_id,))
         result = cur.fetchone()
         old_account_id = result[0] if result else None
 
         metaapi = MetaApi(METAAPI_TOKEN)
 
-        # 🗑️ Delete old MetaAPI account if exists
+        # 🗑️ Step 2: Delete old account if exists
         if old_account_id:
             try:
                 await metaapi.metatrader_account_api.remove_account(old_account_id)
@@ -31,7 +31,7 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
             except Exception as del_error:
                 print("⚠️ Warning: Failed to delete old MetaAPI account:", del_error)
 
-        # ✅ Create new MetaAPI account
+        # ⚙️ Step 3: Create new account
         account = await metaapi.metatrader_account_api.create_account({
             'name': f'VESSA-{login}',
             'type': 'cloud',
@@ -45,10 +45,11 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         metaapi_id = account.id
         print(f"✅ MetaAPI Account Created: {metaapi_id}")
 
-        # 💾 Save to DB immediately with is_mt5_valid = FALSE
+        # 💾 Step 4: Save details to DB immediately (set is_mt5_valid = FALSE first)
         cur.execute("SELECT user_id FROM users WHERE user_id = %s", (user_id,))
         if not cur.fetchone():
             cur.execute("INSERT INTO users (user_id) VALUES (%s)", (user_id,))
+            conn.commit()
 
         cur.execute("""
             UPDATE users SET
@@ -56,12 +57,14 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
                 mt5_login = %s,
                 mt5_password = %s,
                 metaapi_account_id = %s,
-                is_mt5_valid = FALSE
+                is_mt5_valid = FALSE,
+                risk_type = COALESCE(risk_type, 'fixed'),
+                risk_value = COALESCE(risk_value, '0.01')
             WHERE user_id = %s;
         """, (broker, login, password, metaapi_id, user_id))
         conn.commit()
 
-        # ⏳ Wait for MetaAPI to connect (up to 30s)
+        # ⏳ Step 5: Try to wait for connection up to 30s
         print("⏳ Waiting for MetaAPI to connect...")
         connected = False
         for attempt in range(30):
@@ -87,6 +90,7 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         print("❌ Failed to save MT5 data:", e)
         traceback.print_exc()
         return False
+
 
 
 
