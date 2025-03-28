@@ -15,8 +15,21 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
 
-        # 🔧 Step 1: Create MetaAPI account
-        metaapi = MetaApi(METAAPI_TOKEN)
+        # 🔍 Check if user already has MetaAPI account ID
+        cur.execute("SELECT metaapi_account_id FROM users WHERE user_id = %s", (user_id,))
+        result = cur.fetchone()
+        old_account_id = result[0] if result else None
+
+        # 🔧 Step 1: If exists, delete old MetaAPI account
+        if old_account_id:
+            try:
+                metaapi = MetaApi(METAAPI_TOKEN)
+                await metaapi.metatrader_account_api.delete_account(old_account_id)
+                print(f"🗑️ Old MetaAPI account deleted: {old_account_id}")
+            except Exception as del_error:
+                print("⚠️ Warning: Failed to delete old MetaAPI account:", del_error)
+
+        # 🔧 Step 2: Create NEW MetaAPI account
         account = await metaapi.metatrader_account_api.create_account({
             'name': f'VESSA-{login}',
             'type': 'cloud',
@@ -27,11 +40,10 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
             'application': 'copyfactory',
             'magic': 123456
         })
-
-        metaapi_id = account.id  # ✅ object style
+        metaapi_id = account.id
         print(f"✅ MetaAPI Account Created: {metaapi_id}")
 
-        # 🔧 Step 2: Only UPDATE (not insert) — to avoid NOT NULL column errors
+        # 🔧 Step 3: Update DB
         cur.execute("""
             UPDATE users
             SET mt5_broker = %s,
@@ -50,6 +62,7 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         print("❌ Failed to save MT5 data:", e)
         traceback.print_exc()
         return False
+
 
 
 
@@ -92,5 +105,45 @@ def set_copy_subscription_status(user_id: int, status: bool):
         return True
     except Exception as e:
         print("❌ Error updating subscription status:", e)
+        traceback.print_exc()
+        return False
+
+# ✅ Delete MT5 account from MetaAPI + DB cleanup
+async def delete_mt5_account(user_id: int):
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+
+        # 🔍 Fetch metaapi_account_id
+        cur.execute("SELECT metaapi_account_id FROM users WHERE user_id = %s", (user_id,))
+        result = cur.fetchone()
+        metaapi_id = result[0] if result else None
+
+        if metaapi_id:
+            try:
+                metaapi = MetaApi(METAAPI_TOKEN)
+                await metaapi.metatrader_account_api.delete_account(metaapi_id)
+                print(f"🗑️ MetaAPI account deleted: {metaapi_id}")
+            except Exception as del_error:
+                print("⚠️ Failed to delete from MetaAPI:", del_error)
+
+        # 🧹 Clean up fields in DB
+        cur.execute("""
+            UPDATE users
+            SET mt5_login = NULL,
+                mt5_password = NULL,
+                mt5_broker = NULL,
+                metaapi_account_id = NULL,
+                is_copy_subscribed = FALSE
+            WHERE user_id = %s;
+        """, (user_id,))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+
+    except Exception as e:
+        print("❌ Error deleting MT5 account:", e)
         traceback.print_exc()
         return False

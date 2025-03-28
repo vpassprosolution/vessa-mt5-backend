@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Form
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from pydantic import BaseModel
-from database import save_mt5_data, save_risk_data, set_copy_subscription_status
+from database import save_mt5_data, save_risk_data, set_copy_subscription_status, delete_mt5_account
 import psycopg2
 import os
 
@@ -25,18 +25,15 @@ async def save_mt5(
     password: str = Form(...)
 ):
     try:
-        user_id = int(user_id)  # ✅ Convert safely
-        success = await save_mt5_data(
-            user_id=user_id,
-            broker=broker,
-            login=login,
-            password=password
-        )
+        user_id = int(user_id)
+        success = await save_mt5_data(user_id=user_id, broker=broker, login=login, password=password)
         return {"success": success}
     except Exception as e:
-        return {"error": str(e)}
+        return {"success": False, "error": str(e)}
 
-
+# -------------------------------
+# ✅ Save Risk Form Submission
+# -------------------------------
 @app.post("/save_risk")
 async def save_risk(
     user_id: str = Form(...),
@@ -44,16 +41,25 @@ async def save_risk(
     value: str = Form(...)
 ):
     try:
-        user_id = int(user_id)  # ✅ Convert safely
-        success = save_risk_data(
-            user_id=user_id,
-            method=method,
-            value=value
-        )
+        user_id = int(user_id)
+        success = save_risk_data(user_id=user_id, method=method, value=value)
         return {"success": success}
     except Exception as e:
-        return {"error": str(e)}
+        return {"success": False, "error": str(e)}
 
+# -------------------------------
+# ✅ Delete MT5 Account (Step 3)
+# -------------------------------
+@app.post("/delete_mt5")
+async def delete_mt5(user_id: int = Form(...)):
+    try:
+        success = await delete_mt5_account(user_id)
+        if success:
+            return JSONResponse(content={"success": True})
+        else:
+            return JSONResponse(content={"success": False, "error": "Delete failed"})
+    except Exception as e:
+        return JSONResponse(content={"success": False, "error": str(e)})
 
 # -------------------------------
 # ✅ Optional Redirect for /docs
@@ -89,7 +95,7 @@ def get_users_by_symbol(symbol: str):
         return {"error": str(e)}
 
 # -------------------------------
-# ✅ Set Copy Subscription (API called by bot)
+# ✅ Set Copy Subscription (called by bot)
 # -------------------------------
 class CopySubData(BaseModel):
     user_id: int
@@ -101,4 +107,4 @@ async def set_copy_subscription(data: CopySubData):
         success = set_copy_subscription_status(data.user_id, data.status)
         return {"success": success}
     except Exception as e:
-        return {"error": str(e)}
+        return {"success": False, "error": str(e)}
