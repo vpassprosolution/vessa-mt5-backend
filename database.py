@@ -53,7 +53,13 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
             print("❌ MetaAPI connection failed. Please check broker/login/password.")
             return False
 
-        # 💾 Step 5: Update database with MT5 info
+        # 💾 Step 5: Ensure user exists before update
+        cur.execute("SELECT user_id FROM users WHERE user_id = %s", (user_id,))
+        if not cur.fetchone():
+            cur.execute("INSERT INTO users (user_id) VALUES (%s)", (user_id,))
+            print("🆕 User created in DB:", user_id)
+
+        # 💾 Then update MT5 info
         cur.execute("""
             UPDATE users
             SET mt5_broker = %s,
@@ -64,6 +70,7 @@ async def save_mt5_data(user_id: int, broker: str, login: str, password: str):
         """, (broker, login, password, metaapi_id, user_id))
 
         conn.commit()
+        print("✅ MT5 details saved to DB for user:", user_id)
         cur.close()
         conn.close()
         return True
