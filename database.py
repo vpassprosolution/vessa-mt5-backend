@@ -2,6 +2,7 @@ import psycopg2
 from datetime import datetime
 import traceback
 from metaapi_cloud_sdk import MetaApi
+import asyncio
 
 # ✅ PostgreSQL connection
 DATABASE_URL = "postgresql://postgres:vVMyqWjrqgVhEnwyFifTQxkDtPjQutGb@interchange.proxy.rlwy.net:30451/railway"
